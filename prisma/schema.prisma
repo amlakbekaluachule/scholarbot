@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  image         String?
+  role          String    @default("student")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  enrollments   Enrollment[]
+  progress      Progress[]
+  courses       Course[]  @relation("CourseInstructor")
+  aiChats       AIChat[]
+}
+
+model Course {
+  id            String    @id @default(cuid())
+  title         String
+  description   String    @db.Text
+  instructorId  String
+  instructor    User      @relation("CourseInstructor", fields: [instructorId], references: [id])
+  thumbnail     String?
+  category      String
+  level         String
+  duration      Int
+  price         Float     @default(0)
+  isPublished   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  lessons       Lesson[]
+  enrollments   Enrollment[]
+  progress      Progress[]
+}
+
+model Lesson {
+  id            String    @id @default(cuid())
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title         String
+  description   String    @db.Text
+  videoUrl      String?
+  content       String    @db.Text
+  order         Int
+  duration      Int
+  isFree        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  progress      Progress[]
+}
+
+model Enrollment {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt    DateTime  @default(now())
+  
+  @@unique([userId, courseId])
+}
+
+model Progress {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId      String?
+  lesson        Lesson?   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed     Boolean   @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([userId, lessonId])
+}
+
+model AIChat {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String?
+  lessonId      String?
+  messages      Json
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
